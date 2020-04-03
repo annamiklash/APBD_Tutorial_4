@@ -10,7 +10,7 @@ namespace APBD_Tutorial_4.Controllers
 {
     [ApiController]
     [Route("/api/students")]
-    public class StudentsController : ControllerBase //contains many useful helper methods that we will use
+    public class StudentsController : ControllerBase 
     {
         private readonly IStudentsDb _studentsDb;
 
@@ -23,6 +23,10 @@ namespace APBD_Tutorial_4.Controllers
         public IActionResult GetStudents()
         {
             List<Student> studentList = (List<Student>) _studentsDb.GetStudents();
+            if (studentList == null)
+            {
+                return NotFound();
+            }
             return Ok(studentList);
         }
 
@@ -35,7 +39,6 @@ namespace APBD_Tutorial_4.Controllers
             {
                 return NotFound();
             }
-
             return Ok(semester);
         }
     }

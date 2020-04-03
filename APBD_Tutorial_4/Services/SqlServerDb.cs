@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Text.RegularExpressions;
 using APBD_Tutorial_4.Mapper;
 using APBD_Tutorial_4.Model;
 
@@ -21,23 +22,28 @@ namespace APBD_Tutorial_4.Services
         public IEnumerable<Student> GetStudents()
         {
             List<Student> studentList = new List<Student>();
-
-            using (SqlConnection sqlConnection = new SqlConnection(ConnString))
-            using (SqlCommand sqlCommand = new SqlCommand())
+            try
             {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = FIND_ALL_STUDENTS_QUERY;
-
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                while (dataReader.Read())
+                using (SqlConnection sqlConnection = new SqlConnection(ConnString))
+                using (SqlCommand sqlCommand = new SqlCommand())
                 {
-                    Student student = StudentMapper.MapToStudent(dataReader);
-                    studentList.Add(student);
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = FIND_ALL_STUDENTS_QUERY;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    while (dataReader.Read())
+                    {
+                        Student student = StudentMapper.MapToStudent(dataReader);
+                        studentList.Add(student);
+                    }
                 }
             }
-
+            catch (SqlException e)
+            {
+                Console.WriteLine(e.Message);
+            }
             return studentList;
         }
 
@@ -48,20 +54,26 @@ namespace APBD_Tutorial_4.Services
             {
                 sqlCommand.Connection = sqlConnection;
                 sqlCommand.CommandText = FIND_SEMESTER_BY_INDEX_QUERY;
+                
+                try
+                {
+                    if (Regex.IsMatch(indexNumber, "^s[0-9]+$") && indexNumber.Length <= 6)
+                    {
+                        sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
+                        sqlCommand.Parameters["@index"].Value = indexNumber;
+                        sqlConnection.Open();
+                        SqlDataReader dataReader = sqlCommand.ExecuteReader();
 
-                SqlParameter par1 = new SqlParameter();
-                par1.ParameterName = "index";
-                par1.Value = indexNumber;
-
-                sqlCommand.Parameters.AddWithValue("index", indexNumber);
-
-                sqlConnection.Open();
-                SqlDataReader dataReader = sqlCommand.ExecuteReader();
-
-                if (!dataReader.Read()) return new Enrollment();
-                Enrollment semester =EnrollmentMapper.MapToSemester(dataReader);
-
-                return semester;
+                        if (!dataReader.Read()) return new Enrollment();
+                        Enrollment semester = EnrollmentMapper.MapToSemester(dataReader);
+                        return semester;
+                    }
+                }
+                catch (SqlException exception)
+                {
+                    Console.WriteLine("invalid input" + exception.Message);
+                }
+                return null;
             }
         }
     }
