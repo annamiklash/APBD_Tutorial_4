@@ -13,7 +13,6 @@ values (1, 'APBD'),
 insert into s18458.apbd_student.Studies (idstudy, name)
 values (5, 'TAK');
 
-
 insert into s18458.apbd_student.Enrollment (IdEnrollment, Semester, IdStudy, StartDate)
 values (1, 1, 7, '2018-10-01'),
        (2, 2, 3, '2019-03-01'),

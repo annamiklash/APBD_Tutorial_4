@@ -61,11 +61,12 @@ namespace APBD_Tutorial_4.Services
                     {
                         sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
                         sqlCommand.Parameters["@index"].Value = indexNumber;
+                        
                         sqlConnection.Open();
                         SqlDataReader dataReader = sqlCommand.ExecuteReader();
 
                         if (!dataReader.Read()) return new Enrollment();
-                        Enrollment semester = EnrollmentMapper.MapToSemester(dataReader);
+                        var semester = EnrollmentMapper.MapToSemester(dataReader);
                         return semester;
                     }
                 }
