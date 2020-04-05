@@ -1,15 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Data.SqlClient;
 using APBD_Tutorial_4.Model;
 using APBD_Tutorial_4.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace APBD_Tutorial_4.Controllers
 {
-    [Route("api/enrollments")]
+ 
     [ApiController]
+    [Route("api/enrollments")]
     public class EnrollmentController : ControllerBase
     {
-        private IStudentsDb _studentsDb;
+        private readonly IStudentsDb _studentsDb;
 
         public EnrollmentController(IStudentsDb studentsDb)
         {
@@ -17,39 +20,66 @@ namespace APBD_Tutorial_4.Controllers
         }
 
         [HttpPost]
-        public IActionResult EnrollNewStudent(Request request)
+        public IActionResult EnrollNewStudent(EnrollmentRequest enrollmentRequest)
         {
             // 1 validation
-            List<Error> errorsList = ValidationHelper.ValidateRequest(request);
+            List<Error> errorsList = ValidationHelper.ValidateRequest(enrollmentRequest);
             if (!errorsList.Count.Equals(0))
             {
                 return BadRequest(errorsList);
             }
 
             //2. Check if studies exists -> 404
-            bool exists = _studentsDb.StudiesExist(request);
-            if (!exists)
+           string studies = _studentsDb.FindStudies(enrollmentRequest);
+            if (studies==null)
             {
-                return NotFound();
+                return NotFound("Studies " + enrollmentRequest.Studies + " does not exist");
             }
+           
 
             //3. Check if enrollment exists
-            bool enrollmentExists = _studentsDb.EnrollmentExists(request);
+            bool enrollmentExists = _studentsDb.EnrollmentExistsOnFirstSemester(enrollmentRequest);
             if (!enrollmentExists)
             {
-                return BadRequest();
+                return BadRequest("Enrollment for " + enrollmentRequest.Studies + " does not exist for 1 semester");
             }
             
             //4. check if index exists
 
-            bool indexExists = _studentsDb.IndexExists(request);
+            bool indexExists = _studentsDb.IndexExists(enrollmentRequest);
             if (indexExists)
             {
-                return BadRequest();
+                return BadRequest("Student with index " + enrollmentRequest.IndexNumber + " already exists");
+            }
+
+            try
+            {
+                _studentsDb.EnrollNewStudent(enrollmentRequest);
+            }
+            catch (Exception e)
+            {
+                return StatusCode(500, e.Message);
             }
             
-            var response =_studentsDb.EnrollNewStudent(request);
-            return Ok(response);
+            return StatusCode(201);
+        }
+
+        [HttpPost("promotion")]
+        public IActionResult PromoteStudents(PromotionRequest promotionRequest)
+        {
+           bool exists = _studentsDb.EnrollmentExistsWithSemesterAndStudies(promotionRequest);
+           if (exists == false)
+           {
+               return NotFound("Enrollment for semester "+ promotionRequest.Semester + " and studies " + promotionRequest.Studies + " does not exist");
+           }
+           else
+           {
+               List<PromotionResponse> promotionResponses = _studentsDb.PromoteStudents(promotionRequest);
+             
+
+               return StatusCode(201, promotionResponses);
+           }
+
         }
     }
 }

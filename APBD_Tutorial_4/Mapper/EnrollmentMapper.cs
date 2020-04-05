@@ -10,6 +10,7 @@ namespace APBD_Tutorial_4.Mapper
         {
             return new Enrollment()
             {
+                
                 Semester = (int) dataReader["Semester"],
                 StartDate = Convert.ToDateTime(dataReader["StartDate"].ToString())
             };

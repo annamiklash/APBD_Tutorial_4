@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace APBD_Tutorial_4.Model
 {
-    public class Request
+    public class EnrollmentRequest
     {
         [Required] public string IndexNumber { get; set; }
 
@@ -13,11 +13,11 @@ namespace APBD_Tutorial_4.Model
 
         [Required] public string LastName { get; set; }
 
-        [Required] public DateTime BirthDate { get; set; }
+        [Required] public string BirthDate { get; set; }
 
         [Required] public string Studies { get; set; }
 
-        public Request(string indexNumber, string firstName, string lastName, DateTime birthDate, string studies)
+        public EnrollmentRequest(string indexNumber, string firstName, string lastName, string birthDate, string studies)
         {
             IndexNumber = indexNumber;
             FirstName = firstName;
@@ -25,6 +25,12 @@ namespace APBD_Tutorial_4.Model
             BirthDate = birthDate;
             Studies = studies;
         }
+        
+        public EnrollmentRequest()
+        {
+   
+        }
+        
 
       
     }

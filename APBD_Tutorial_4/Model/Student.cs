@@ -7,9 +7,9 @@ namespace APBD_Tutorial_4.Model
         public string IndexNumber { get; set; }
         public string FirstName { get; set; }
         public string LastName { get; set; }
-        public DateTime BirthDate { get; set; }
+        public string BirthDate { get; set; }
 
-        public Student(string indexNumber, string firstName, string lastName, DateTime birthDate)
+        public Student(string indexNumber, string firstName, string lastName, string birthDate)
         {
             IndexNumber = indexNumber;
             FirstName = firstName;
@@ -19,6 +19,10 @@ namespace APBD_Tutorial_4.Model
 
         public Student()
         {
+        }
+        public override string ToString()
+        {
+            return $"IndexNumber : {IndexNumber}, FirstName {FirstName}, LastName {LastName}, BirthDate {BirthDate}, ";
         }
     }
 }

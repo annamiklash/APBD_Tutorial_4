@@ -7,28 +7,33 @@ namespace APBD_Tutorial_4.Model
 {
     public static class ValidationHelper
     {
-        public static List<Error> ValidateRequest(Request request)
+
+        private const string INDEX_NUMBER_REGEX = "^s[0-9]+$";
+        private const string NAME_REGEX = "^[A-Z][-a-zA-Z]+$";
+        private const string DATE_REGEX = @"^\s*(3[01]|[12][0-9]|0?[1-9])\.(1[012]|0?[1-9])\.((?:19|20)\d{2})\s*$";
+
+            public static List<Error> ValidateRequest(EnrollmentRequest enrollmentRequest)
         {
             List<Error> errorList = new List<Error>();
 
-            if (!IsIndexNumberValid(request.IndexNumber))
+            if (!IsIndexNumberValid(enrollmentRequest.IndexNumber))
             {
-                errorList.Add(new Error(request.IndexNumber, "Wrong index format"));
+                errorList.Add(new Error("IndexNumber",enrollmentRequest.IndexNumber, "Invalid Index Number format. Should match " + INDEX_NUMBER_REGEX));
             }
 
-            if (!IsNameValid(request.FirstName))
+            if (!IsNameValid(enrollmentRequest.FirstName))
             {
-                errorList.Add(new Error(request.FirstName, "Wrong First Name format"));
+                errorList.Add(new Error("FirstName", enrollmentRequest.FirstName, "Invalid First Name format. Should match " + NAME_REGEX));
             }
 
-            if (!IsNameValid(request.LastName))
+            if (!IsNameValid(enrollmentRequest.LastName))
             {
-                errorList.Add(new Error(request.LastName, "Wrong Last Name format"));
+                errorList.Add(new Error("LastName",enrollmentRequest.LastName, "Invalid Last Name format. Should match " + NAME_REGEX));
             }
 
-            if (!IsDateValid(request.BirthDate))
+            if (!IsDateValid(enrollmentRequest.BirthDate))
             {
-                errorList.Add(new Error(request.BirthDate.ToString(CultureInfo.InvariantCulture), "Wrong Last Name format"));
+                errorList.Add(new Error("BirthDate",enrollmentRequest.BirthDate, "Invalid Date format. Should match " + DATE_REGEX));
             }
 
             return errorList;
@@ -36,18 +41,17 @@ namespace APBD_Tutorial_4.Model
 
         private static bool IsIndexNumberValid(string indexNumber)
         {
-            return Regex.IsMatch(indexNumber, "^s[0-9]+$", RegexOptions.IgnoreCase);
+            return Regex.IsMatch(indexNumber, INDEX_NUMBER_REGEX, RegexOptions.IgnoreCase);
         }
 
         private static bool IsNameValid(string name)
         {
-            return Regex.IsMatch(name, "^[A-Z][-a-zA-Z]+$");
+            return Regex.IsMatch(name, NAME_REGEX);
         }
 
-        private static bool IsDateValid(DateTime birthDate)
+        private static bool IsDateValid(string birthDate)
         {
-            var birthDateDate = birthDate.Date.ToString(CultureInfo.CurrentCulture);
-            return Regex.IsMatch(birthDateDate, @"(((0|1)[0-9]|2[0-9]|3[0-1])\/(0[1-9]|1[0-2])\/((19|20)\d\d))$");
+          return Regex.IsMatch(birthDate, DATE_REGEX);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace APBD_Tutorial_4.Mapper
                 FirstName = dataReader["FirstName"].ToString(),
                 LastName = dataReader["LastName"].ToString(),
                 IndexNumber = dataReader["IndexNumber"].ToString(),
-                BirthDate = Convert.ToDateTime(dataReader["BirthDate"].ToString())
+                BirthDate = dataReader["BirthDate"].ToString()
             };
         }
     }
