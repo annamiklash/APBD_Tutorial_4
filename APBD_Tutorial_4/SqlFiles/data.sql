@@ -1,30 +1,26 @@
-﻿
-insert into s18458.apbd_student.Studies (IdStudy, Name)
-values (1, 'APBD'),
-       (2, 'TPO'),
-       (3, 'RBD'),
-       (4, 'SKJ'),
-       (6, 'SOP'),
-       (7, 'AM'),
-       (8, 'PSM'),
-       (9, 'SAD'),
-       (10, 'PJC');
-
-insert into s18458.apbd_student.Studies (idstudy, name)
-values (5, 'TAK');
+﻿insert into s18458.apbd_student.Studies (IdStudy, Name)
+values (1, 'Engineering'),
+       (2, 'New Media'),
+       (3, 'Culture Of Japan'),
+       (4, 'Journalism'),
+       (5, 'Sociology'),
+       (6, 'Economics'),
+       (7, 'Business'),
+       (8, 'Big Data'),
+       (9, 'Accounting'),
+       (10, 'Management');
 
 insert into s18458.apbd_student.Enrollment (IdEnrollment, Semester, IdStudy, StartDate)
-values (1, 1, 7, '2018-10-01'),
-       (2, 2, 3, '2019-03-01'),
-       (3, 2, 10, '2019-03-01'),
-       (4, 2, 6, '2019-03-01'),
-       (5, 3, 4, '2019-10-01'),
-       (6, 3, 9, '2019-10-01'),
-       (7, 4, 1, '2019-03-01'),
-       (8, 4, 2, '2019-03-01'),
-       (9, 4, 8, '2019-03-01'),
-       (10, 1, 5, '2018-10-01');
-
+values (1, 1, 1, '2019-10-01'),
+       (2, 1, 2, '2019-10-01'),
+       (3, 1, 3, '2019-10-01'),
+       (4, 1, 4, '2019-10-01'),
+       (5, 1, 5, '2019-10-01'),
+       (6, 1, 6, '2019-10-01'),
+       (7, 1, 7, '2019-10-01'),
+       (8, 1, 8, '2019-10-01'),
+       (9, 1, 9, '2019-10-01'),
+       (10, 1, 10, '2019-10-01');
 
 insert into s18458.apbd_student.Student (IndexNumber, FirstName, LastName, BirthDate, IdEnrollment)
 values ('s1111', 'Armaan', 'Pham', '1981-01-05', 1),
@@ -47,5 +43,3 @@ values ('s1111', 'Armaan', 'Pham', '1981-01-05', 1),
        ('s5699', 'Jace', 'Rees', '1983-03-25', 8),
        ('s34689', 'Gia', 'Forrest', '1985-07-02', 9),
        ('s73468', 'Flynn', 'Harding', '1996-04-24', 10);
-
-
