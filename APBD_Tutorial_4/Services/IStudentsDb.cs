@@ -9,7 +9,7 @@ namespace APBD_Tutorial_4.Services
     {
         IEnumerable<Student> GetStudents();
         Enrollment GetSemesterByIndex(string indexNumber);
-        void EnrollNewStudent(EnrollmentRequest enrollmentRequest);
+        EnrollmentResponse EnrollNewStudent(EnrollmentRequest enrollmentRequest);
         string FindStudies(EnrollmentRequest enrollmentRequest);
         bool EnrollmentExistsOnFirstSemester(EnrollmentRequest enrollmentRequest);
         bool IndexExists(EnrollmentRequest enrollmentRequest);

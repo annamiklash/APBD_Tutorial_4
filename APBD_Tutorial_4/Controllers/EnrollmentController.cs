@@ -54,14 +54,14 @@ namespace APBD_Tutorial_4.Controllers
 
             try
             {
-                _studentsDb.EnrollNewStudent(enrollmentRequest);
+                EnrollmentResponse response = _studentsDb.EnrollNewStudent(enrollmentRequest);
+                return StatusCode(201, response);
             }
             catch (Exception e)
             {
                 return StatusCode(500, e.Message);
             }
-            
-            return StatusCode(201);
+
         }
 
         [HttpPost("promotion")]

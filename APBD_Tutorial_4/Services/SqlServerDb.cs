@@ -17,6 +17,11 @@ namespace APBD_Tutorial_4.Services
 
         private const string FIND_ALL_STUDENTS_QUERY =
             "select IndexNumber, FirstName, LastName, BirthDate from apbd_student.Student";
+            
+        private const string FIND_SEMESTER_AND_LASTNAME_FOR_INDEX =
+            "select e.Semester, s.LastName from apbd_student.Enrollment e JOIN " +
+            "apbd_student.Student s on s.IdEnrollment=e.IdEnrollment where s.IndexNumber=@index";
+        
 
         private const string FIND_SEMESTER_BY_INDEX_QUERY =
             "select e.Semester, e.StartDate from apbd_student.Student s " +
@@ -39,8 +44,8 @@ namespace APBD_Tutorial_4.Services
         private const string ENROLL_STUDENT = 
             "INSERT INTO apbd_student.Student (IndexNumber, FirstName, LastName, BirthDate, IdEnrollment) values (@index, @firstName, @lastName, (SELECT CONVERT(datetime, @birthDate, 104)), @idEnrollment)";
 
-        private const string FIND_ENROLLMENT_ID =
-            "Select e.IdEnrollment from apbd_student.Enrollment e JOIN apbd_student.Studies s on e.idStudy=s.IdStudy WHERE s.Name = @name";
+        private const string FIND_ENROLLMENT_ID_FIRST_SEMESTER =
+            "Select e.IdEnrollment from apbd_student.Enrollment e JOIN apbd_student.Studies s on e.idStudy=s.IdStudy WHERE s.Name = @name and e.Semester=1";
 
         private const string GET_PROMOTION_RESPONSE_FOR_ENROLLMENT_ID = 
             "select e.IdEnrollment, e.Semester, s.Name, e.StartDate, st.IndexNumber, st.FirstName, st.LastName, st.BirthDate " + 
@@ -67,6 +72,7 @@ namespace APBD_Tutorial_4.Services
                     {
                         Student student = StudentMapper.MapToStudent(dataReader);
                         studentList.Add(student);
+                        dataReader.Close();
                     }
                 }
             }
@@ -98,6 +104,7 @@ namespace APBD_Tutorial_4.Services
 
                         if (!dataReader.Read()) return new Enrollment();
                         var semester = EnrollmentMapper.MapToSemester(dataReader);
+                        dataReader.Close();
                         return semester;
                     }
                 }
@@ -110,158 +117,180 @@ namespace APBD_Tutorial_4.Services
             }
         }
 
-        public void EnrollNewStudent(EnrollmentRequest enrollmentRequest)
+        public EnrollmentResponse EnrollNewStudent(EnrollmentRequest enrollmentRequest)
         {
-            //int enrollmentId = FindEnrollmentId(request);
-
+         
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
             {
-                sqlCommand.CommandText = FIND_ENROLLMENT_ID;
-                
-                sqlCommand.Parameters.Add("@name", System.Data.SqlDbType.NVarChar, 4);
-                sqlCommand.Parameters["@name"].Value = enrollmentRequest.Studies;
-                sqlCommand.Connection = sqlConnection;
-
-                sqlConnection.Open();
-                var transaction = sqlConnection.BeginTransaction();
-
-                sqlCommand.Transaction = transaction;
-                
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                if (!dataReader.Read())
+                using (SqlCommand sqlCommand = new SqlCommand())
                 {
-                    transaction.Rollback();
-                    throw new Exception();
-                }
-                int enrollmentId = Convert.ToInt32(dataReader["IdEnrollment"].ToString());
+                    sqlCommand.CommandText = FIND_ENROLLMENT_ID_FIRST_SEMESTER;
 
-                dataReader.Close();
-                
-                sqlCommand.CommandText = ENROLL_STUDENT;
-                
-                sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
-                sqlCommand.Parameters["@index"].Value = enrollmentRequest.IndexNumber;
-                
-                sqlCommand.Parameters.Add("@firstName", System.Data.SqlDbType.NVarChar, 20);
-                sqlCommand.Parameters["@firstName"].Value = enrollmentRequest.FirstName;
-                
-                sqlCommand.Parameters.Add("@lastName", System.Data.SqlDbType.NVarChar, 40);
-                sqlCommand.Parameters["@lastName"].Value = enrollmentRequest.LastName;
-                
-                sqlCommand.Parameters.Add("@birthDate", System.Data.SqlDbType.NVarChar, 10);
-                sqlCommand.Parameters["@birthDate"].Value = enrollmentRequest.BirthDate;
-                
-                sqlCommand.Parameters.Add("@idEnrollment", System.Data.SqlDbType.NVarChar, 2);
-                sqlCommand.Parameters["@idEnrollment"].Value = enrollmentId;
-                
-                sqlCommand.ExecuteNonQuery();
-                transaction.Commit();
-                
-              
+                    sqlCommand.Parameters.Add("@name", System.Data.SqlDbType.NVarChar, 20);
+                    sqlCommand.Parameters["@name"].Value = enrollmentRequest.Studies;
+                    sqlCommand.Connection = sqlConnection;
+
+                    sqlConnection.Open();
+                    var transaction = sqlConnection.BeginTransaction();
+
+                    sqlCommand.Transaction = transaction;
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader();
+                    int enrollmentId = 0;
+                    if (dataReader.Read())
+                    {
+                        if (!dataReader.HasRows)
+                        {
+                            dataReader.Close();
+                            transaction.Rollback();
+                            throw new Exception();
+                        }
+
+                        enrollmentId = Convert.ToInt32(dataReader["IdEnrollment"].ToString());
+                        
+                    }
+                    dataReader.Close();
+                    sqlCommand.CommandText = ENROLL_STUDENT;
+
+                    sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
+                    sqlCommand.Parameters["@index"].Value = enrollmentRequest.IndexNumber;
+
+                    sqlCommand.Parameters.Add("@firstName", System.Data.SqlDbType.NVarChar, 20);
+                    sqlCommand.Parameters["@firstName"].Value = enrollmentRequest.FirstName;
+
+                    sqlCommand.Parameters.Add("@lastName", System.Data.SqlDbType.NVarChar, 40);
+                    sqlCommand.Parameters["@lastName"].Value = enrollmentRequest.LastName;
+
+                    sqlCommand.Parameters.Add("@birthDate", System.Data.SqlDbType.NVarChar, 10);
+                    sqlCommand.Parameters["@birthDate"].Value = enrollmentRequest.BirthDate;
+
+                    sqlCommand.Parameters.Add("@idEnrollment", System.Data.SqlDbType.NVarChar, 2);
+                    sqlCommand.Parameters["@idEnrollment"].Value = enrollmentId;
+
+                    sqlCommand.ExecuteNonQuery();
+                    transaction.Commit();
+                    
+                    EnrollmentResponse response = GenerateEnrollmentResponse(enrollmentRequest.IndexNumber);
+                    return response;
+
+                }
             }
+        }
+
+        private EnrollmentResponse GenerateEnrollmentResponse(string enrollmentRequestIndexNumber)
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            {
+                using (SqlCommand sqlCommand = new SqlCommand())
+                {
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = FIND_SEMESTER_AND_LASTNAME_FOR_INDEX;
+
+                    sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 20);
+                    sqlCommand.Parameters["@index"].Value = enrollmentRequestIndexNumber;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    while (dataReader.Read())
+                    {
+                        int semester = Convert.ToInt32(dataReader["Semester"].ToString());
+                        string lastName = dataReader["LastName"].ToString();
+                           
+                        return new EnrollmentResponse(semester, lastName);
+                      
+                    }
+                }
+            }
+
+            return null;
         }
 
         public bool EnrollmentExistsOnFirstSemester(EnrollmentRequest enrollmentRequest)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
             {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = ENROLLMENT_EXISTS_ON_FIRST_SEMESTER;
 
-                sqlCommand.Parameters.Add("@studiesName", System.Data.SqlDbType.NVarChar, 20);
-                sqlCommand.Parameters["@studiesName"].Value = enrollmentRequest.Studies;
-                
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                while (dataReader.Read())
+                using (SqlCommand sqlCommand = new SqlCommand())
                 {
-                    var exists = dataReader["enrollment_count"].ToString();
-                    if (exists.Equals("1"))
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = ENROLLMENT_EXISTS_ON_FIRST_SEMESTER;
+
+                    sqlCommand.Parameters.Add("@studiesName", System.Data.SqlDbType.NVarChar, 20);
+                    sqlCommand.Parameters["@studiesName"].Value = enrollmentRequest.Studies;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    while (dataReader.Read())
                     {
-                        return true;
+                        var exists = dataReader["enrollment_count"].ToString();
+                        if (exists.Equals("1"))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
+
             return false;
         }
 
         public bool IndexExists(EnrollmentRequest enrollmentRequest)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
             {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = INDEX_EXISTS;
 
-                sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
-                sqlCommand.Parameters["@index"].Value = enrollmentRequest.IndexNumber;
-
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                while (dataReader.Read())
+                using (SqlCommand sqlCommand = new SqlCommand())
                 {
-                    var exists = dataReader["index_count"].ToString();
-                    if (exists.Equals("1"))
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = INDEX_EXISTS;
+
+                    sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
+                    sqlCommand.Parameters["@index"].Value = enrollmentRequest.IndexNumber;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    while (dataReader.Read())
                     {
-                        return true;
+                        var exists = dataReader["index_count"].ToString();
+                        if (exists.Equals("1"))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
 
             return false;
         }
-
-        public int FindEnrollmentId(EnrollmentRequest enrollmentRequest)
-        {
-            int enrollmentId = 0;
-            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
-            {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = FIND_ENROLLMENT_ID;
-                
-                sqlCommand.Parameters.Add("@name", System.Data.SqlDbType.NVarChar, 20);
-                sqlCommand.Parameters["@name"].Value = enrollmentRequest.Studies;
-
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                while (dataReader.Read())
-                {
-                    enrollmentId = Convert.ToInt32(dataReader["IdEnrollment"].ToString());
-                }
-            }
-
-            return enrollmentId;
-        }
-
+        
         public bool EnrollmentExistsWithSemesterAndStudies(PromotionRequest promotionRequest)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
             {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = ENROLLMENT_EXISTS_FOR_SEMESTER_AND_STUDIES;
-                
-                sqlCommand.Parameters.Add("@semester", SqlDbType.Int, 2);
-                sqlCommand.Parameters["@semester"].Value = promotionRequest.Semester;
-                
-                sqlCommand.Parameters.Add("@studiesName", SqlDbType.VarChar, 20);
-                sqlCommand.Parameters["@studiesName"].Value = promotionRequest.Studies;
-                
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                while (dataReader.Read())
+                using (SqlCommand sqlCommand = new SqlCommand())
                 {
-                    var value = dataReader["enrollment_count"].ToString();
-                    if (value.Equals("1"))
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = ENROLLMENT_EXISTS_FOR_SEMESTER_AND_STUDIES;
+
+                    sqlCommand.Parameters.Add("@semester", SqlDbType.Int, 2);
+                    sqlCommand.Parameters["@semester"].Value = promotionRequest.Semester;
+
+                    sqlCommand.Parameters.Add("@studiesName", SqlDbType.VarChar, 20);
+                    sqlCommand.Parameters["@studiesName"].Value = promotionRequest.Studies;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    while (dataReader.Read())
                     {
-                        return true;
+                        var value = dataReader["enrollment_count"].ToString();
+                        if (value.Equals("1"))
+                        {
+                            return true;
+                        }
                     }
                 }
             }
@@ -271,85 +300,89 @@ namespace APBD_Tutorial_4.Services
         public  List<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = sqlConnection.CreateCommand())
             {
 
-                sqlCommand.CommandText = "apbd_student.promoteStudents";
-                sqlCommand.CommandType = System.Data.CommandType.StoredProcedure;
-                
-                sqlCommand.Parameters.AddWithValue("@semester", promotionRequest.Semester);
-                sqlCommand.Parameters.AddWithValue("@studiesName", promotionRequest.Studies);
-              
-                
-                IDbDataParameter outputParameter = sqlCommand.CreateParameter();
-                outputParameter.ParameterName = "@newIdEnrollment";
-                outputParameter.Direction = System.Data.ParameterDirection.Output;
-                outputParameter.DbType = System.Data.DbType.Int32;
-                outputParameter.Size = 2;
-                sqlCommand.Parameters.Add(outputParameter);
+                using (SqlCommand sqlCommand = sqlConnection.CreateCommand())
+                {
 
-                sqlConnection.Open();
-                sqlCommand.ExecuteNonQuery();
+                    sqlCommand.CommandText = "apbd_student.promoteStudents";
+                    sqlCommand.CommandType = System.Data.CommandType.StoredProcedure;
 
-                int enrollmentId = (int) sqlCommand.Parameters["@newIdEnrollment"].Value;
-                sqlConnection.Close();
+                    sqlCommand.Parameters.AddWithValue("@semester", promotionRequest.Semester);
+                    sqlCommand.Parameters.AddWithValue("@studiesName", promotionRequest.Studies);
 
-                List<PromotionResponse> list = GeneratePromotionResponseList(enrollmentId);
-                
-                return list;
 
+                    IDbDataParameter outputParameter = sqlCommand.CreateParameter();
+                    outputParameter.ParameterName = "@newIdEnrollment";
+                    outputParameter.Direction = System.Data.ParameterDirection.Output;
+                    outputParameter.DbType = System.Data.DbType.Int32;
+                    outputParameter.Size = 2;
+                    sqlCommand.Parameters.Add(outputParameter);
+
+                    sqlConnection.Open();
+                    sqlCommand.ExecuteNonQuery();
+
+                    int enrollmentId = (int) sqlCommand.Parameters["@newIdEnrollment"].Value;
+                   List<PromotionResponse> list = GeneratePromotionResponseList(enrollmentId);
+
+                    return list;
+
+                }
             }
         }
 
-        private List<PromotionResponse> GeneratePromotionResponseList( int enrollmentId)
+        private List<PromotionResponse> GeneratePromotionResponseList(int enrollmentId)
         {
             List<PromotionResponse> promotionResponses = new List<PromotionResponse>();
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
             {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = GET_PROMOTION_RESPONSE_FOR_ENROLLMENT_ID;
-                
-                sqlCommand.Parameters.Add("@enrollmentId", SqlDbType.Int, 2);
-                sqlCommand.Parameters["@enrollmentId"].Value = enrollmentId;
-
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-               
-                while (dataReader.Read())
+                using (SqlCommand sqlCommand = new SqlCommand())
                 {
-                    PromotionResponse response = PromotionResponseMapper.MapToResponse(dataReader);
-                    if (promotionResponses != null)
-                    {
-                        promotionResponses.Add(response);
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = GET_PROMOTION_RESPONSE_FOR_ENROLLMENT_ID;
 
+                    sqlCommand.Parameters.Add("@enrollmentId", SqlDbType.Int, 2);
+                    sqlCommand.Parameters["@enrollmentId"].Value = enrollmentId;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+
+                    while (dataReader.Read())
+                    {
+                        PromotionResponse response = PromotionResponseMapper.MapToResponse(dataReader);
+                        if (promotionResponses != null)
+                        {
+                            promotionResponses.Add(response);
+                        } 
                     }
                 }
-            }
 
-            return promotionResponses;
+                return promotionResponses;
+            }
         }
 
         public string FindStudies(EnrollmentRequest enrollmentRequest)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
-            using (SqlCommand sqlCommand = new SqlCommand())
-
             {
-                sqlCommand.Connection = sqlConnection;
-                sqlCommand.CommandText = FIND_STUDIES;
+                using (SqlCommand sqlCommand = new SqlCommand())
 
-                sqlCommand.Parameters.Add("@studiesName", System.Data.SqlDbType.NVarChar, 20);
-                sqlCommand.Parameters["@studiesName"].Value = enrollmentRequest.Studies;
-
-                sqlConnection.Open();
-
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                while (dataReader.Read())
                 {
-                    var exists = dataReader["Name"].ToString();
-                    return exists;
+                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.CommandText = FIND_STUDIES;
+
+                    sqlCommand.Parameters.Add("@studiesName", System.Data.SqlDbType.NVarChar, 20);
+                    sqlCommand.Parameters["@studiesName"].Value = enrollmentRequest.Studies;
+
+                    sqlConnection.Open();
+
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    while (dataReader.Read())
+                    {
+                        var exists = dataReader["Name"].ToString();
+                        return exists;
+                    }
                 }
             }
 

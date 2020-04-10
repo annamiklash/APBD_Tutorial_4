@@ -2,10 +2,10 @@
 {
     public class EnrollmentResponse
     {
-        public string Semester { get; set; }
+        public int Semester { get; set; }
         public string LastName { get; set; }
 
-        public EnrollmentResponse(string semester, string lastName)
+        public EnrollmentResponse(int semester, string lastName)
         {
             Semester = semester;
             LastName = lastName;
