@@ -16,7 +16,10 @@ namespace APBD_Tutorial_4.Services
        // int FindEnrollmentId(EnrollmentRequest enrollmentRequest);
         bool EnrollmentExistsWithSemesterAndStudies(PromotionRequest promotionRequest);
         List<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest);
-        
-        
+
+        //bool IndexExists(string index);
+        Student GetStudentByIndex(string index);
+
+
     }
 }

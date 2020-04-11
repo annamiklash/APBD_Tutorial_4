@@ -41,5 +41,16 @@ namespace APBD_Tutorial_4.Controllers
             }
             return Ok(semester);
         }
+        
+        [HttpPost("student")]
+        public IActionResult GetStudentByIndex(string indexNumber)
+        {
+          Student student =_studentsDb.GetStudentByIndex(indexNumber);
+            if (student == null)
+            {
+                return NotFound();
+            }
+            return Ok(student);
+        }
     }
 }

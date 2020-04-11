@@ -21,7 +21,6 @@ namespace APBD_Tutorial_4.Services
         private const string FIND_SEMESTER_AND_LASTNAME_FOR_INDEX =
             "select e.Semester, s.LastName from apbd_student.Enrollment e JOIN " +
             "apbd_student.Student s on s.IdEnrollment=e.IdEnrollment where s.IndexNumber=@index";
-        
 
         private const string FIND_SEMESTER_BY_INDEX_QUERY =
             "select e.Semester, e.StartDate from apbd_student.Student s " +
@@ -53,6 +52,65 @@ namespace APBD_Tutorial_4.Services
             "JOIN apbd_student.Student st on e.IdEnrollment = st.IdEnrollment " + 
             "JOIN apbd_student.Studies s on e.IdStudy = s.IdStudy " + 
             "where e.IdEnrollment = @enrollmentId;";
+
+        private const string GET_STUDENT_BY_INDEX =
+            "Select IndexNumber, FirstName, LastName, BirthDate from apbd_student.Student where IndexNumber=@index";
+
+        public Student GetStudentByIndex(string index)
+        {
+            bool exists = IndexExists(index);
+            if (!exists)
+            {
+                return new Student();
+            }
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = GET_STUDENT_BY_INDEX;
+                
+                sqlCommand.Parameters.Add("@index", SqlDbType.NVarChar, 6);
+                sqlCommand.Parameters["@index"].Value = index;
+
+                sqlConnection.Open();
+
+                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                while (dataReader.Read())
+                {
+                    Student student = StudentMapper.MapToStudent(dataReader);
+                    dataReader.Close();
+                    return student;
+                }
+            }
+            return new Student();
+        }
+        
+        private bool IndexExists(string index)
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = INDEX_EXISTS;
+                
+                sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
+                sqlCommand.Parameters["@index"].Value = index;
+
+                sqlConnection.Open();
+
+                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                while (dataReader.Read())
+                {
+                    var exists = dataReader["index_count"].ToString();
+                    if (exists.Equals("1"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+        
 
         public IEnumerable<Student> GetStudents()
         {
@@ -388,5 +446,6 @@ namespace APBD_Tutorial_4.Services
 
             return null;
         }
+
     }
 }
