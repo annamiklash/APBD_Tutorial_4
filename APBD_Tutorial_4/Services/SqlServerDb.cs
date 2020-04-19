@@ -125,12 +125,12 @@ namespace APBD_Tutorial_4.Services
 
                     sqlConnection.Open();
 
-                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); 
                     while (dataReader.Read())
                     {
                         Student student = StudentMapper.MapToStudent(dataReader);
                         studentList.Add(student);
-                        dataReader.Close();
+                        
                     }
                 }
             }

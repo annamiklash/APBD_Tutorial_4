@@ -13,13 +13,9 @@ namespace APBD_Tutorial_4.Services
         string FindStudies(EnrollmentRequest enrollmentRequest);
         bool EnrollmentExistsOnFirstSemester(EnrollmentRequest enrollmentRequest);
         bool IndexExists(EnrollmentRequest enrollmentRequest);
-       // int FindEnrollmentId(EnrollmentRequest enrollmentRequest);
         bool EnrollmentExistsWithSemesterAndStudies(PromotionRequest promotionRequest);
         List<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest);
-
-        //bool IndexExists(string index);
         Student GetStudentByIndex(string index);
-
 
     }
 }

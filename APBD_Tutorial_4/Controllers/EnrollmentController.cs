@@ -51,7 +51,6 @@ namespace APBD_Tutorial_4.Controllers
             {
                 return BadRequest("Student with index " + enrollmentRequest.IndexNumber + " already exists");
             }
-
             try
             {
                 EnrollmentResponse response = _studentsDb.EnrollNewStudent(enrollmentRequest);
@@ -61,7 +60,6 @@ namespace APBD_Tutorial_4.Controllers
             {
                 return StatusCode(500, e.Message);
             }
-
         }
 
         [HttpPost("promotion")]
@@ -75,7 +73,6 @@ namespace APBD_Tutorial_4.Controllers
            else
            {
                List<PromotionResponse> promotionResponses = _studentsDb.PromoteStudents(promotionRequest);
-             
 
                return StatusCode(201, promotionResponses);
            }
