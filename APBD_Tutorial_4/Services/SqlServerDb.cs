@@ -55,6 +55,104 @@ namespace APBD_Tutorial_4.Services
 
         private const string GET_STUDENT_BY_INDEX =
             "Select IndexNumber, FirstName, LastName, BirthDate from apbd_student.Student where IndexNumber=@index";
+        
+        private const string CREDENTIALS_EXIST = "Select COUNT(*) as valid_count from apbd_student_roles.Student where IndexNumber=@username AND Password=@password";
+
+        private const string GET_ROLES =
+            "SELECT r.Name as role_name" +
+            " FROM apbd_student_roles.Student s" +
+            " JOIN apbd_student_roles.Student_Role sr ON s.IndexNumber = sr.IndexNumber" +
+            " JOIN apbd_student_roles.Role r on sr.IdRole = r.IdRole" +
+            " WHERE s.IndexNumber = @username" +
+            " AND s.Password = @password";
+
+        private const string GET_PASS =
+            "SELECT Password as password from apbd_student_roles.Student" +
+            " WHERE IndexNumber=@index";
+
+        public string GetPassword(string requestIndex)
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = GET_PASS;
+
+                sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 100);
+                sqlCommand.Parameters["@index"].Value = requestIndex;
+
+                sqlConnection.Open();
+
+                SqlDataReader dataReader = sqlCommand.ExecuteReader();
+                if (dataReader.Read())
+                {
+                    var password = dataReader["password"].ToString();
+                    return password;
+                }
+            }
+
+            return null;
+        }
+        
+        public IEnumerable<string> GetStudentRole(string username, string password)
+        {
+            List<string> roles = new List<string>();
+            
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+                
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = GET_ROLES;
+                
+                sqlCommand.Parameters.Add("@username", System.Data.SqlDbType.NVarChar, 6);
+                sqlCommand.Parameters["@username"].Value = username;
+                
+                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 100);
+                sqlCommand.Parameters["@password"].Value = password;
+
+                sqlConnection.Open();
+
+                SqlDataReader dataReader = sqlCommand.ExecuteReader();
+                while (dataReader.Read())
+                {
+                    var role = dataReader["role_name"].ToString();
+                    roles.Add(role);
+                   
+                }
+            }
+            return roles;
+        }
+        
+        public bool CredentialsValid(string username, string password)
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = CREDENTIALS_EXIST;
+                
+                sqlCommand.Parameters.Add("@username", System.Data.SqlDbType.NVarChar, 6);
+                sqlCommand.Parameters["@username"].Value = username;
+                
+                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 100);
+                sqlCommand.Parameters["@password"].Value = password;
+
+                sqlConnection.Open();
+
+                SqlDataReader dataReader = sqlCommand.ExecuteReader();
+                while (dataReader.Read())
+                {
+                    var exists = dataReader["valid_count"].ToString();
+                    if (exists.Equals("1"))
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
 
         public Student GetStudentByIndex(string index)
         {
@@ -84,7 +182,8 @@ namespace APBD_Tutorial_4.Services
             }
             return new Student();
         }
-        
+
+
         private bool IndexExists(string index)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
@@ -355,7 +454,7 @@ namespace APBD_Tutorial_4.Services
             return false;
         }
 
-        public  List<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest)
+        public IEnumerable<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             {
@@ -381,7 +480,7 @@ namespace APBD_Tutorial_4.Services
                     sqlCommand.ExecuteNonQuery();
 
                     int enrollmentId = (int) sqlCommand.Parameters["@newIdEnrollment"].Value;
-                   List<PromotionResponse> list = GeneratePromotionResponseList(enrollmentId);
+                    IEnumerable<PromotionResponse> list = GeneratePromotionResponseList(enrollmentId);
 
                     return list;
 
@@ -389,7 +488,7 @@ namespace APBD_Tutorial_4.Services
             }
         }
 
-        private List<PromotionResponse> GeneratePromotionResponseList(int enrollmentId)
+        private IEnumerable<PromotionResponse> GeneratePromotionResponseList(int enrollmentId)
         {
             List<PromotionResponse> promotionResponses = new List<PromotionResponse>();
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))

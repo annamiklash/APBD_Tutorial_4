@@ -1,10 +1,17 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
+using System.Linq;
+using System.Security.Claims;
+using System.Text;
+using APBD_Tutorial_4.Factory;
+using APBD_Tutorial_4.Handlers;
 using APBD_Tutorial_4.Model;
 using APBD_Tutorial_4.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-
-// For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.Extensions.Configuration;
 
 namespace APBD_Tutorial_4.Controllers
 {
@@ -13,13 +20,16 @@ namespace APBD_Tutorial_4.Controllers
     public class StudentsController : ControllerBase 
     {
         private readonly IStudentsDb _studentsDb;
+        public IConfiguration configuration;
 
-        public StudentsController(IStudentsDb studentsDb)
+        public StudentsController(IStudentsDb studentsDb, IConfiguration configuration)
         {
             _studentsDb = studentsDb;
+            this.configuration = configuration;
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin")]
         public IActionResult GetStudents()
         {
             List<Student> studentList = (List<Student>) _studentsDb.GetStudents();
@@ -41,5 +51,34 @@ namespace APBD_Tutorial_4.Controllers
             }
             return Ok(semester);
         }
+
+
+        [HttpPost]
+        public IActionResult Login(LoginRequest request)
+        {
+            var accessToken = TokenFactory.GenerateAccessToken(request, configuration, _studentsDb);
+            var refreshToken = TokenFactory.GenerateRefreshToken(request, _studentsDb,accessToken);
+
+            if (accessToken == null || refreshToken == null)
+            {
+                return Unauthorized("Incorrect request");
+            }
+            return Ok(new AuthRequest(accessToken, refreshToken, request.Username));
+        }
+
+        [HttpPost("refresh")]
+        public IActionResult RefreshToken(AuthRequest request)
+        {
+            var response = RefreshTokenHandler.RefreshToken(request, _studentsDb, configuration);
+            var responseErrors = response.Errors;
+            if (responseErrors.Count > 0)
+            {
+                return BadRequest(responseErrors);
+            }
+            
+            return Ok(response);
+        }
+
+ 
     }
 }

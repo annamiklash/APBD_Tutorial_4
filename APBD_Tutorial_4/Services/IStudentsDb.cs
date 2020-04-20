@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using APBD_Tutorial_4.Model;
 using Microsoft.AspNetCore.Http;
@@ -14,8 +15,12 @@ namespace APBD_Tutorial_4.Services
         bool EnrollmentExistsOnFirstSemester(EnrollmentRequest enrollmentRequest);
         bool IndexExists(EnrollmentRequest enrollmentRequest);
         bool EnrollmentExistsWithSemesterAndStudies(PromotionRequest promotionRequest);
-        List<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest);
+        IEnumerable<PromotionResponse> PromoteStudents(PromotionRequest promotionRequest);
         Student GetStudentByIndex(string index);
 
+        bool CredentialsValid(string username, string password);
+
+        IEnumerable<string> GetStudentRole(string username, string password);
+        string GetPassword(string requestIndex);
     }
 }

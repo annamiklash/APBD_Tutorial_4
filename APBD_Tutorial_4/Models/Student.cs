@@ -1,4 +1,5 @@
 ﻿using System;
+using Microsoft.Win32.SafeHandles;
 
 namespace APBD_Tutorial_4.Model
 {
@@ -8,6 +9,9 @@ namespace APBD_Tutorial_4.Model
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string BirthDate { get; set; }
+
+        public AccessToken AccessToken { get; set; }
+        public RefreshToken RefreshToken { get; set; }
 
         public Student(string indexNumber, string firstName, string lastName, string birthDate)
         {

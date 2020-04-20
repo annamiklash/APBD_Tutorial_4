@@ -72,7 +72,7 @@ namespace APBD_Tutorial_4.Controllers
            }
            else
            {
-               List<PromotionResponse> promotionResponses = _studentsDb.PromoteStudents(promotionRequest);
+               IEnumerable<PromotionResponse> promotionResponses = _studentsDb.PromoteStudents(promotionRequest);
 
                return StatusCode(201, promotionResponses);
            }

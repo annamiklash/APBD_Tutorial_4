@@ -13,6 +13,7 @@ CREATE TABLE s18458.apbd_student.Student
     IndexNumber  nvarchar(100) NOT NULL,
     FirstName    nvarchar(100) NOT NULL,
     LastName     nvarchar(100) NOT NULL,
+    Password     nvarchar(100) NOT NULL,
     BirthDate    date          NOT NULL,
     IdEnrollment int           NOT NULL,
     CONSTRAINT Student_pk PRIMARY KEY (IndexNumber)
