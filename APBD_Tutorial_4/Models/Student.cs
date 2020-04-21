@@ -9,9 +9,22 @@ namespace APBD_Tutorial_4.Model
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public string BirthDate { get; set; }
-
+        public string HashedPassword { get; set; }
         public AccessToken AccessToken { get; set; }
         public RefreshToken RefreshToken { get; set; }
+
+        public Student(string indexNumber, string firstName, string lastName, string birthDate, string hashedPassword)
+        {
+            IndexNumber = indexNumber;
+            FirstName = firstName;
+            LastName = lastName;
+            BirthDate = birthDate;
+            HashedPassword = hashedPassword;
+        }
+
+        public Student()
+        {
+        }
 
         public Student(string indexNumber, string firstName, string lastName, string birthDate)
         {
@@ -21,9 +34,6 @@ namespace APBD_Tutorial_4.Model
             BirthDate = birthDate;
         }
 
-        public Student()
-        {
-        }
         public override string ToString()
         {
             return $"IndexNumber : {IndexNumber}, FirstName {FirstName}, LastName {LastName}, BirthDate {BirthDate}, ";

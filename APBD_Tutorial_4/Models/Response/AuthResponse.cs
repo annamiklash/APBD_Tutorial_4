@@ -7,7 +7,6 @@ namespace APBD_Tutorial_4.Model
         public AccessToken AccessToken { get; set; }
         public RefreshToken RefreshToken { get; set; }
         public string Index { get; set; }
-
         public List<Error> Errors { get; set; }
 
         public AuthResponse(AccessToken accessToken, RefreshToken refreshToken, string index, List<Error> errors)

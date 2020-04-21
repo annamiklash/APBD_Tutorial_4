@@ -1,7 +1,4 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.Globalization;
-using System.Text.RegularExpressions;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace APBD_Tutorial_4.Model
 {
@@ -15,23 +12,23 @@ namespace APBD_Tutorial_4.Model
 
         [Required] public string BirthDate { get; set; }
 
+        [Required] public string Password { get; set; }
+
         [Required] public string Studies { get; set; }
 
-        public EnrollmentRequest(string indexNumber, string firstName, string lastName, string birthDate, string studies)
+        public EnrollmentRequest(string indexNumber, string firstName, string lastName, string birthDate, string studies, string password)
         {
             IndexNumber = indexNumber;
             FirstName = firstName;
             LastName = lastName;
             BirthDate = birthDate;
             Studies = studies;
+            Password = password;
         }
         
         public EnrollmentRequest()
         {
    
         }
-        
-
-      
     }
 }

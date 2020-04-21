@@ -1,15 +1,5 @@
 ﻿
-insert into apbd_student_roles.Studies (IdStudy, Name)
-values (1, 'Engineering'),
-       (2, 'New Media'),
-       (3, 'Culture Of Japan'),
-       (4, 'Journalism'),
-       (5, 'Sociology'),
-       (6, 'Economics'),
-       (7, 'Business'),
-       (8, 'Big Data'),
-       (9, 'Accounting'),
-       (10, 'Management');
+
 
 insert into apbd_student_roles.Enrollment (IdEnrollment, Semester, IdStudy, StartDate)
 values (1, 1, 1, '2019-10-01'),
@@ -26,6 +16,17 @@ values (1, 1, 1, '2019-10-01'),
 Insert Into apbd_student_roles.Role (IdRole, Name) values
 (1, 'student'),
 (2, 'admin');
+insert into apbd_student_roles.Studies (IdStudy, Name)
+values (1, 'Engineering'),
+       (2, 'New Media'),
+       (3, 'Culture Of Japan'),
+       (4, 'Journalism'),
+       (5, 'Sociology'),
+       (6, 'Economics'),
+       (7, 'Business'),
+       (8, 'Big Data'),
+       (9, 'Accounting'),
+       (10, 'Management');
 
 insert into apbd_student_roles.Student (IndexNumber, FirstName, LastName, Password, BirthDate, IdEnrollment)
 values ('s1111', 'Armaan', 'Pham', 'aaa', '1981-01-05', 1),

@@ -19,8 +19,8 @@ namespace APBD_Tutorial_4.Services
         Student GetStudentByIndex(string index);
 
         bool CredentialsValid(string username, string password);
-
         IEnumerable<string> GetStudentRole(string username, string password);
-        string GetPassword(string requestIndex);
+        
+        string GetHashedPassword(string requestIndex);
     }
 }

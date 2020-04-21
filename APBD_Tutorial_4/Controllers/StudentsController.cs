@@ -20,7 +20,7 @@ namespace APBD_Tutorial_4.Controllers
     public class StudentsController : ControllerBase 
     {
         private readonly IStudentsDb _studentsDb;
-        public IConfiguration configuration;
+        private IConfiguration configuration;
 
         public StudentsController(IStudentsDb studentsDb, IConfiguration configuration)
         {
@@ -56,13 +56,14 @@ namespace APBD_Tutorial_4.Controllers
         [HttpPost]
         public IActionResult Login(LoginRequest request)
         {
-            var accessToken = TokenFactory.GenerateAccessToken(request, configuration, _studentsDb);
-            var refreshToken = TokenFactory.GenerateRefreshToken(request, _studentsDb,accessToken);
+            var accessToken = TokensGenerator.GenerateInitialAccessToken(request, configuration, _studentsDb);
+            var refreshToken = TokensGenerator.GenerateRefreshToken(request, _studentsDb,accessToken);
 
             if (accessToken == null || refreshToken == null)
             {
                 return Unauthorized("Incorrect request");
             }
+            
             return Ok(new AuthRequest(accessToken, refreshToken, request.Username));
         }
 
@@ -75,10 +76,7 @@ namespace APBD_Tutorial_4.Controllers
             {
                 return BadRequest(responseErrors);
             }
-            
             return Ok(response);
         }
-
- 
     }
 }

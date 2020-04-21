@@ -10,6 +10,7 @@
       <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="6.5.0" />
       <PackageReference Include="System.Data.SqlClient" Version="4.8.1" />
       <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="6.5.0" />
+      <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="4.7.0" />
     </ItemGroup>
 
 

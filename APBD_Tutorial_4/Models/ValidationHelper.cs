@@ -36,6 +36,11 @@ namespace APBD_Tutorial_4.Model
                 errorList.Add(new Error("BirthDate",enrollmentRequest.BirthDate, "Invalid Date format. Should match " + DATE_REGEX));
             }
 
+            if (string.IsNullOrEmpty(enrollmentRequest.Password))
+            {
+                errorList.Add(new Error("Password", enrollmentRequest.Password, "No Password Provided"));
+            }
+
             return errorList;
         }
 

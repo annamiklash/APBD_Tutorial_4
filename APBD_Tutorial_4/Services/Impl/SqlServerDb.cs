@@ -1,12 +1,11 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Text.RegularExpressions;
+using System.Security.Cryptography;
+using APBD_Tutorial_4.Generator;
 using APBD_Tutorial_4.Mapper;
 using APBD_Tutorial_4.Model;
-using Microsoft.AspNetCore.Mvc;
 
 namespace APBD_Tutorial_4.Services
 {
@@ -16,61 +15,105 @@ namespace APBD_Tutorial_4.Services
             "Data Source=db-mssql;Initial Catalog=s18458;Integrated Security=True";
 
         private const string FIND_ALL_STUDENTS_QUERY =
-            "select IndexNumber, FirstName, LastName, BirthDate from apbd_student.Student";
+            "select IndexNumber, FirstName, LastName, BirthDate from apbd_student_pass.Student";
             
         private const string FIND_SEMESTER_AND_LASTNAME_FOR_INDEX =
-            "select e.Semester, s.LastName from apbd_student.Enrollment e JOIN " +
-            "apbd_student.Student s on s.IdEnrollment=e.IdEnrollment where s.IndexNumber=@index";
+            "select e.Semester, s.LastName from apbd_student_pass.Enrollment e JOIN " +
+            "apbd_student_pass.Student s on s.IdEnrollment=e.IdEnrollment where s.IndexNumber=@index";
 
         private const string FIND_SEMESTER_BY_INDEX_QUERY =
-            "select e.Semester, e.StartDate from apbd_student.Student s " +
-            "JOIN apbd_student.Enrollment e on e.IdEnrollment=s.IdEnrollment where s.IndexNumber=@index";
+            "select e.Semester, e.StartDate from apbd_student_pass.Student s " +
+            "JOIN apbd_student_pass.Enrollment e on e.IdEnrollment=s.IdEnrollment where s.IndexNumber=@index";
 
         private const string FIND_STUDIES =
-            "SELECT Name FROM  apbd_student.Studies where Name=@studiesName";
+            "SELECT Name FROM  apbd_student_pass.Studies where Name=@studiesName";
 
         private const string ENROLLMENT_EXISTS_ON_FIRST_SEMESTER =
-            "Select COUNT(*) as enrollment_count FROM  apbd_student.Enrollment e JOIN apbd_student.Studies s on e.idStudy=s.IdStudy WHERE e.Semester = 1" +
-            " AND s.Name in (SELECT Name FROM  apbd_student.Studies where Name=@studiesName)";
+            "Select COUNT(*) as enrollment_count FROM  apbd_student_pass.Enrollment e"+
+            " JOIN apbd_student_pass.Studies s on e.idStudy=s.IdStudy WHERE e.Semester = 1" +
+            " AND s.Name in (SELECT Name FROM  apbd_student_pass.Studies where Name=@studiesName)";
 
         private const string ENROLLMENT_EXISTS_FOR_SEMESTER_AND_STUDIES =
-            "select count(*) as enrollment_count from apbd_student.Studies s JOIN apbd_student.Enrollment e" +
-            " ON s.IdStudy = e.IdStudy Where s.Name=@studiesName AND e.Semester=@semester";
+            "select count(*) as enrollment_count from apbd_student.Studies s"+
+            " JOIN apbd_student_pass.Enrollment e" +
+            " ON s.IdStudy = e.IdStudy WHERE s.Name=@studiesName AND e.Semester=@semester";
 
         private const string INDEX_EXISTS =
-            "Select COUNT(*) as index_count from apbd_student.Student where IndexNumber=@index";
+            "SELECT COUNT(*) as index_count"+ 
+            " FROM apbd_student_pass.Student WHERE IndexNumber=@index";
 
         private const string ENROLL_STUDENT = 
-            "INSERT INTO apbd_student.Student (IndexNumber, FirstName, LastName, BirthDate, IdEnrollment) values (@index, @firstName, @lastName, (SELECT CONVERT(datetime, @birthDate, 104)), @idEnrollment)";
+                "INSERT INTO apbd_student_pass.Student (IndexNumber, FirstName, LastName, BirthDate, IdEnrollment, Password)"+
+                " values (@index, @firstName, @lastName," +
+                " (SELECT CONVERT(datetime, @birthDate, 104)), @idEnrollment, @encryptedPassword)";
 
         private const string FIND_ENROLLMENT_ID_FIRST_SEMESTER =
-            "Select e.IdEnrollment from apbd_student.Enrollment e JOIN apbd_student.Studies s on e.idStudy=s.IdStudy WHERE s.Name = @name and e.Semester=1";
+            "Select e.IdEnrollment from apbd_student_pass.Enrollment e"+
+            " JOIN apbd_student_pass.Studies s on e.idStudy=s.IdStudy WHERE s.Name = @name and e.Semester=1";
 
         private const string GET_PROMOTION_RESPONSE_FOR_ENROLLMENT_ID = 
             "select e.IdEnrollment, e.Semester, s.Name, e.StartDate, st.IndexNumber, st.FirstName, st.LastName, st.BirthDate " + 
-            "from apbd_student.Enrollment e " +
-            "JOIN apbd_student.Student st on e.IdEnrollment = st.IdEnrollment " + 
-            "JOIN apbd_student.Studies s on e.IdStudy = s.IdStudy " + 
+            "from apbd_student_pass.Enrollment e " +
+            "JOIN apbd_student_pass.Student st on e.IdEnrollment = st.IdEnrollment " + 
+            "JOIN apbd_student_pass.Studies s on e.IdStudy = s.IdStudy " + 
             "where e.IdEnrollment = @enrollmentId;";
 
         private const string GET_STUDENT_BY_INDEX =
-            "Select IndexNumber, FirstName, LastName, BirthDate from apbd_student.Student where IndexNumber=@index";
+            "Select IndexNumber, FirstName, LastName, BirthDate" +
+            " from apbd_student_pass.Student where IndexNumber=@index";
         
-        private const string CREDENTIALS_EXIST = "Select COUNT(*) as valid_count from apbd_student_roles.Student where IndexNumber=@username AND Password=@password";
+        private const string CREDENTIALS_EXIST = 
+            "Select COUNT(*) as valid_count from apbd_student_pass.Student"+
+            " where IndexNumber=@username AND Password=@password";
 
         private const string GET_ROLES =
             "SELECT r.Name as role_name" +
-            " FROM apbd_student_roles.Student s" +
-            " JOIN apbd_student_roles.Student_Role sr ON s.IndexNumber = sr.IndexNumber" +
-            " JOIN apbd_student_roles.Role r on sr.IdRole = r.IdRole" +
+            " FROM apbd_student_pass.Student s" +
+            " JOIN apbd_student_pass.Student_Role sr ON s.IndexNumber = sr.IndexNumber" +
+            " JOIN apbd_student_pass.Role r on sr.IdRole = r.IdRole" +
             " WHERE s.IndexNumber = @username" +
             " AND s.Password = @password";
 
         private const string GET_PASS =
-            "SELECT Password as password from apbd_student_roles.Student" +
+            "SELECT Password as password from apbd_student_pass.Student" +
             " WHERE IndexNumber=@index";
 
-        public string GetPassword(string requestIndex)
+        private const string GET_SALT =
+            "SELECT p.Salt from apbd_student_pass.Password p JOIN apbd_student_pass.Student s " +
+            "on s.Password = p.Password WHERE s.IndexNumber=@index";
+
+        private const string SAVE_PASSWORD =
+            "INSERT INTO apbd_student_pass.Password (Password, Salt)" +
+            " VALUES (@password, @salt)";
+
+
+        public string SavePassword(string password)
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+                var hashSalt = HashSaltGenerator.GenerateSaltedHash(password);
+                var salt = hashSalt.Salt;
+                var hashedPassword = hashSalt.Hash;
+
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = SAVE_PASSWORD;
+
+                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 500);
+                sqlCommand.Parameters["@password"].Value = hashedPassword;
+
+                sqlCommand.Parameters.Add("@salt", System.Data.SqlDbType.NVarChar, 200);
+                sqlCommand.Parameters["@salt"].Value = salt;
+                
+                sqlConnection.Open();
+                sqlCommand.ExecuteNonQuery();
+
+                return hashedPassword;
+            }
+        }
+        
+
+        public string GetHashedPassword(string index)
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             using (SqlCommand sqlCommand = new SqlCommand())
@@ -80,10 +123,10 @@ namespace APBD_Tutorial_4.Services
                 sqlCommand.CommandText = GET_PASS;
 
                 sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 100);
-                sqlCommand.Parameters["@index"].Value = requestIndex;
+                sqlCommand.Parameters["@index"].Value = index;
 
                 sqlConnection.Open();
-
+                
                 SqlDataReader dataReader = sqlCommand.ExecuteReader();
                 if (dataReader.Read())
                 {
@@ -98,7 +141,17 @@ namespace APBD_Tutorial_4.Services
         public IEnumerable<string> GetStudentRole(string username, string password)
         {
             List<string> roles = new List<string>();
+            var hashedPassword = GetHashedPassword(username);
+            var salt = GetSalt(username);
+
+            var isPasswordValid = IsPasswordValid(password, hashedPassword, salt);
             
+            if (!isPasswordValid)
+            {
+                Console.WriteLine("Passwords not same");
+                return roles;
+            }
+
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             using (SqlCommand sqlCommand = new SqlCommand())
             {
@@ -109,24 +162,63 @@ namespace APBD_Tutorial_4.Services
                 sqlCommand.Parameters.Add("@username", System.Data.SqlDbType.NVarChar, 6);
                 sqlCommand.Parameters["@username"].Value = username;
                 
-                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 100);
-                sqlCommand.Parameters["@password"].Value = password;
+                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 500);
+                sqlCommand.Parameters["@password"].Value = hashedPassword;
 
                 sqlConnection.Open();
-
+               
                 SqlDataReader dataReader = sqlCommand.ExecuteReader();
                 while (dataReader.Read())
                 {
                     var role = dataReader["role_name"].ToString();
                     roles.Add(role);
-                   
+
                 }
             }
             return roles;
         }
-        
+
+        private bool IsPasswordValid(string enteredPassword, string hashedPassword, string salt)
+        {
+            var saltBytes = Convert.FromBase64String(salt);
+            var rfc2898DeriveBytes = new Rfc2898DeriveBytes(enteredPassword, saltBytes, 10000);
+            var base64String = Convert.ToBase64String(rfc2898DeriveBytes.GetBytes(256));
+            return base64String.Equals(hashedPassword);
+        }
+
+        private string GetSalt(string index)
+        {
+            using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
+            using (SqlCommand sqlCommand = new SqlCommand())
+            {
+
+                sqlCommand.Connection = sqlConnection;
+                sqlCommand.CommandText = GET_SALT;
+
+                sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 100);
+                sqlCommand.Parameters["@index"].Value = index;
+
+                sqlConnection.Open();
+                
+                SqlDataReader dataReader = sqlCommand.ExecuteReader();
+                if (dataReader.Read())
+                {
+                    var salt = dataReader["Salt"].ToString();
+                    return salt;
+                }
+            }
+
+            return null;
+        }
+
         public bool CredentialsValid(string username, string password)
         {
+            var encodedPassword = GetHashedPassword(username);
+            if (!encodedPassword.Equals(password))
+            {
+                return false;
+            }
+            
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             using (SqlCommand sqlCommand = new SqlCommand())
             {
@@ -136,8 +228,8 @@ namespace APBD_Tutorial_4.Services
                 sqlCommand.Parameters.Add("@username", System.Data.SqlDbType.NVarChar, 6);
                 sqlCommand.Parameters["@username"].Value = username;
                 
-                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 100);
-                sqlCommand.Parameters["@password"].Value = password;
+                sqlCommand.Parameters.Add("@password", System.Data.SqlDbType.NVarChar, 500);
+                sqlCommand.Parameters["@password"].Value = encodedPassword;
 
                 sqlConnection.Open();
 
@@ -172,7 +264,7 @@ namespace APBD_Tutorial_4.Services
 
                 sqlConnection.Open();
 
-                SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
+                SqlDataReader dataReader = sqlCommand.ExecuteReader(); 
                 while (dataReader.Read())
                 {
                     Student student = StudentMapper.MapToStudent(dataReader);
@@ -209,7 +301,6 @@ namespace APBD_Tutorial_4.Services
             }
             return false;
         }
-        
 
         public IEnumerable<Student> GetStudents()
         {
@@ -229,7 +320,6 @@ namespace APBD_Tutorial_4.Services
                     {
                         Student student = StudentMapper.MapToStudent(dataReader);
                         studentList.Add(student);
-                        
                     }
                 }
             }
@@ -237,7 +327,6 @@ namespace APBD_Tutorial_4.Services
             {
                 Console.WriteLine(e.Message);
             }
-
             return studentList;
         }
 
@@ -248,88 +337,48 @@ namespace APBD_Tutorial_4.Services
             {
                 sqlCommand.Connection = sqlConnection;
                 sqlCommand.CommandText = FIND_SEMESTER_BY_INDEX_QUERY;
-
+                
                 try
                 {
-                    if (Regex.IsMatch(indexNumber, "^s[0-9]+$") && indexNumber.Length <= 6)
-                    {
-                        sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
-                        sqlCommand.Parameters["@index"].Value = indexNumber;
-
-                        sqlConnection.Open();
-                        SqlDataReader dataReader = sqlCommand.ExecuteReader();
-
-                        if (!dataReader.Read()) return new Enrollment();
-                        var semester = EnrollmentMapper.MapToSemester(dataReader);
-                        dataReader.Close();
-                        return semester;
-                    }
+                    sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
+                    sqlCommand.Parameters["@index"].Value = indexNumber;
+                    sqlConnection.Open();
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader();
+                    if (!dataReader.Read()) return new Enrollment();
+                    var semester = EnrollmentMapper.MapToSemester(dataReader);
+                    dataReader.Close();
+                    return semester;
                 }
                 catch (SqlException exception)
                 {
                     Console.WriteLine("invalid input" + exception.Message);
                 }
-
                 return null;
             }
         }
 
         public EnrollmentResponse EnrollNewStudent(EnrollmentRequest enrollmentRequest)
         {
-         
+            var savePassword = SavePassword(enrollmentRequest.Password);
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             {
-                using (SqlCommand sqlCommand = new SqlCommand())
+                using (SqlCommand sqlCommand = sqlConnection.CreateCommand())
                 {
-                    sqlCommand.CommandText = FIND_ENROLLMENT_ID_FIRST_SEMESTER;
+                    sqlCommand.CommandText = "apbd_student_pass.enroll_student";
+                    sqlCommand.CommandType = CommandType.StoredProcedure;
 
-                    sqlCommand.Parameters.Add("@name", System.Data.SqlDbType.NVarChar, 20);
-                    sqlCommand.Parameters["@name"].Value = enrollmentRequest.Studies;
-                    sqlCommand.Connection = sqlConnection;
+                    sqlCommand.Parameters.AddWithValue("@index_number", enrollmentRequest.IndexNumber);
+                    sqlCommand.Parameters.AddWithValue("@first_name", enrollmentRequest.FirstName);
+                    sqlCommand.Parameters.AddWithValue("@last_name", enrollmentRequest.LastName);
+                    sqlCommand.Parameters.AddWithValue("@birth_date", enrollmentRequest.BirthDate);
+                    sqlCommand.Parameters.AddWithValue("@studies", enrollmentRequest.Studies);
+                    sqlCommand.Parameters.AddWithValue("@password", savePassword);
 
                     sqlConnection.Open();
-                    var transaction = sqlConnection.BeginTransaction();
-
-                    sqlCommand.Transaction = transaction;
-
-                    SqlDataReader dataReader = sqlCommand.ExecuteReader();
-                    int enrollmentId = 0;
-                    if (dataReader.Read())
-                    {
-                        if (!dataReader.HasRows)
-                        {
-                            dataReader.Close();
-                            transaction.Rollback();
-                            throw new Exception();
-                        }
-
-                        enrollmentId = Convert.ToInt32(dataReader["IdEnrollment"].ToString());
-                        
-                    }
-                    dataReader.Close();
-                    sqlCommand.CommandText = ENROLL_STUDENT;
-
-                    sqlCommand.Parameters.Add("@index", System.Data.SqlDbType.NVarChar, 6);
-                    sqlCommand.Parameters["@index"].Value = enrollmentRequest.IndexNumber;
-
-                    sqlCommand.Parameters.Add("@firstName", System.Data.SqlDbType.NVarChar, 20);
-                    sqlCommand.Parameters["@firstName"].Value = enrollmentRequest.FirstName;
-
-                    sqlCommand.Parameters.Add("@lastName", System.Data.SqlDbType.NVarChar, 40);
-                    sqlCommand.Parameters["@lastName"].Value = enrollmentRequest.LastName;
-
-                    sqlCommand.Parameters.Add("@birthDate", System.Data.SqlDbType.NVarChar, 10);
-                    sqlCommand.Parameters["@birthDate"].Value = enrollmentRequest.BirthDate;
-
-                    sqlCommand.Parameters.Add("@idEnrollment", System.Data.SqlDbType.NVarChar, 2);
-                    sqlCommand.Parameters["@idEnrollment"].Value = enrollmentId;
-
                     sqlCommand.ExecuteNonQuery();
-                    transaction.Commit();
-                    
+
                     EnrollmentResponse response = GenerateEnrollmentResponse(enrollmentRequest.IndexNumber);
                     return response;
-
                 }
             }
         }
@@ -359,7 +408,6 @@ namespace APBD_Tutorial_4.Services
                     }
                 }
             }
-
             return null;
         }
 
@@ -367,7 +415,6 @@ namespace APBD_Tutorial_4.Services
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             {
-
                 using (SqlCommand sqlCommand = new SqlCommand())
                 {
                     sqlCommand.Connection = sqlConnection;
@@ -408,8 +455,8 @@ namespace APBD_Tutorial_4.Services
 
                     sqlConnection.Open();
 
-                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); //expected feedback
-                    while (dataReader.Read())
+                    SqlDataReader dataReader = sqlCommand.ExecuteReader(); 
+                    if (dataReader.Read())
                     {
                         var exists = dataReader["index_count"].ToString();
                         if (exists.Equals("1"))
@@ -419,7 +466,6 @@ namespace APBD_Tutorial_4.Services
                     }
                 }
             }
-
             return false;
         }
         
@@ -458,7 +504,6 @@ namespace APBD_Tutorial_4.Services
         {
             using (SqlConnection sqlConnection = new SqlConnection(CONNECTION_DATA_STRING))
             {
-
                 using (SqlCommand sqlCommand = sqlConnection.CreateCommand())
                 {
 
@@ -500,6 +545,7 @@ namespace APBD_Tutorial_4.Services
 
                     sqlCommand.Parameters.Add("@enrollmentId", SqlDbType.Int, 2);
                     sqlCommand.Parameters["@enrollmentId"].Value = enrollmentId;
+                    
 
                     sqlConnection.Open();
 
@@ -514,7 +560,6 @@ namespace APBD_Tutorial_4.Services
                         } 
                     }
                 }
-
                 return promotionResponses;
             }
         }
@@ -545,6 +590,5 @@ namespace APBD_Tutorial_4.Services
 
             return null;
         }
-
     }
 }

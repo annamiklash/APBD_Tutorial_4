@@ -8,14 +8,14 @@ namespace APBD_Tutorial_4.Model
         public int IdEnrollment { get; set; }
         public int Semester { get; set; }
         public DateTime StartDate { get; set; }
-        public  Student Student { get; set; }
+        public  string Index { get; set; }
 
-        public PromotionResponse(int idEnrollment, int semester, DateTime startDate, Student student)
+        public PromotionResponse(int idEnrollment, int semester, DateTime startDate, string index)
         {
             IdEnrollment = idEnrollment;
             Semester = semester;
             StartDate = startDate;
-            Student = student;
+            Index = index;
         }
 
         public PromotionResponse()
@@ -25,7 +25,7 @@ namespace APBD_Tutorial_4.Model
 
         public override string ToString()
         {
-            return $"IdEnrollment : {IdEnrollment}, Semester {Semester}, StartDate {StartDate}, Student {Student}, ";
+            return $"IdEnrollment : {IdEnrollment}, Semester {Semester}, StartDate {StartDate}, Index {Index}, ";
         }
     }
 }
